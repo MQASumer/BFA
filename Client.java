@@ -87,85 +87,88 @@ public class Client {
 			System.out.println(e);
 		}
 	}
-	
-	
-	
-	public static String[] getsAvail(String core , String memory, String disk ,BufferedReader in, DataOutputStream out) throws IOException{
-		
+
+	public static String[] getsAvail(String core, String memory, String disk, BufferedReader in, DataOutputStream out)
+			throws IOException {
+
 		int fitfactor = 0;
 		String[] availServer = null;
-		
-		sendMSG("GETS Avail "+ core +" "+ memory +" "+  disk +"\n", out);
+
+		sendMSG("GETS Avail " + core + " " + memory + " " + disk + "\n", out);
 		String rcvd = readMSG(in);
 		String[] Data = parsing(rcvd); // parse DATA to find the amount of servers
 		sendMSG("OK\n", out);
+
+		int numServer = Integer.parseInt(Data[1]); // Number of servers on system.
 		
-		if(Integer.parseInt(Data[1]) ==0) {
+		if (numServer == 0) {
+			rcvd = readMSG(in);// catch the "."
 			return getsCapable(core, memory, disk, in, out);
 		}
+
 		
-		int numServer = Integer.parseInt(Data[1]); // Number of servers on system.
-		
+
 		// Loop through all servers to create server list
-				for (int i = 0; i < numServer; i++) {
-					rcvd = readMSG(in);
-					String[] stringList = parsing(rcvd);
-					
-					if(core == stringList[4]) {
-						return stringList;
-					}
-					
-					
-					if(i == 0 || fitfactor < Integer.parseInt(core) - Integer.parseInt(stringList[4])) {
-						fitfactor = Integer.parseInt(core) - Integer.parseInt(stringList[4]);
-						availServer = stringList;
-					}
-					
-				}
-		
+		for (int i = 0; i < numServer; i++) {
+			rcvd = readMSG(in);
+			String[] stringList = parsing(rcvd);
+
+			if (core == stringList[4]) {
+				return stringList;
+			}
+
+			if (i == 0 || fitfactor < Integer.parseInt(core) - Integer.parseInt(stringList[4])) {
+				fitfactor = Integer.parseInt(core) - Integer.parseInt(stringList[4]);
+				availServer = stringList;
+			}
+
+		}
+
+		sendMSG("OK\n", out); // catch the "." at end of data stream.
+		rcvd = readMSG(in);
+
 		return availServer;
-		
+
 	}
-	
-	
-	
-	public static String[] getsCapable(String core , String memory, String disk ,BufferedReader in, DataOutputStream out) throws IOException{
-		
+
+	public static String[] getsCapable(String core, String memory, String disk, BufferedReader in, DataOutputStream out)
+			throws IOException {
+
 		int fitfactor = 0;
 		String[] capable = null;
-		
-		sendMSG("GETS Capable "+ core +" "+ memory +" "+  disk +"\n", out);
+
+		sendMSG("GETS Capable " + core + " " + memory + " " + disk + "\n", out);
 		String rcvd = readMSG(in);
 		String[] Data = parsing(rcvd); // parse DATA to find the amount of servers
 		sendMSG("OK\n", out);
-		
+
 		// Initialise variable for server DATA
 		int numServer = Integer.parseInt(Data[1]); // Number of servers on system.
-		
+
 		// Loop through all servers to create server list
 		for (int i = 0; i < numServer; i++) {
-			
+
 			rcvd = readMSG(in);
 			String[] stringList = parsing(rcvd);
-			
-			if(core == stringList[4]) { // return if perfect fit
+
+			if (core == stringList[4]) { // return if perfect fit
 				return stringList;
 			}
-			
-			
-			if(i == 0 || fitfactor > Integer.parseInt(core) - Integer.parseInt(stringList[4])) { //set first fit factor then check for better fit each time
+
+			if (i == 0 || fitfactor > Integer.parseInt(core) - Integer.parseInt(stringList[4])) { // set first fit
+																									// factor then check
+																									// for better fit
+																									// each time
 				fitfactor = Integer.parseInt(core) - Integer.parseInt(stringList[4]);
 				capable = stringList;
 			}
-			
+
 		}
 		sendMSG("OK\n", out); // catch the "." at end of data stream.
 		rcvd = readMSG(in);
 		return capable;
-		
+
 	}
-	
-	
 
 	public static void main(String[] args) {
 
@@ -186,46 +189,35 @@ public class Client {
 			String firstjob = rcvd;
 
 			/*
-			
-			// Gets command to find the largest server
-			sendMSG("GETS All\n", dout); // get server DATA
-			rcvd = readMSG(din);
-			String[] Data = parsing(rcvd); // parse DATA to find the amount of servers
-			sendMSG("OK\n", dout);
-			// Initialise variable for server DATA
-			int numServer = Integer.parseInt(Data[1]); // Number of servers on system.
-			Server[] serverList = new Server[numServer]; // Create server array.
+			 * 
+			 * // Gets command to find the largest server sendMSG("GETS All\n", dout); //
+			 * get server DATA rcvd = readMSG(din); String[] Data = parsing(rcvd); // parse
+			 * DATA to find the amount of servers sendMSG("OK\n", dout); // Initialise
+			 * variable for server DATA int numServer = Integer.parseInt(Data[1]); // Number
+			 * of servers on system. Server[] serverList = new Server[numServer]; // Create
+			 * server array.
+			 * 
+			 * // Loop through all servers to create server list for (int i = 0; i <
+			 * numServer; i++) { rcvd = readMSG(din); String[] stringList = parsing(rcvd);
+			 * serverList[i] = new Server(stringList[0], stringList[4]); }
+			 * 
+			 * Arrays.sort(serverList); // Sort Servers
+			 * 
+			 * // find first largest server String highestCore = serverList[numServer -
+			 * 1].getCore(); int highestCoreIndex = numServer - 1;
+			 * 
+			 * for (int i = numServer - 1; i >= 0; i--) { if (serverList[i].getCore() ==
+			 * highestCore) { highestCore = serverList[i].getCore(); highestCoreIndex = i; }
+			 * else { break; } } System.out.println("Largest in list is " +
+			 * serverList[highestCoreIndex].getType() + " with " +
+			 * serverList[highestCoreIndex].getCore() + " cores.");
+			 * 
+			 * sendMSG("OK\n", dout); // catch the "." at end of data stream. rcvd =
+			 * readMSG(din);
+			 * 
+			 * 
+			 */
 
-			// Loop through all servers to create server list
-			for (int i = 0; i < numServer; i++) {
-				rcvd = readMSG(din);
-				String[] stringList = parsing(rcvd);
-				serverList[i] = new Server(stringList[0], stringList[4]);
-			}
-
-			Arrays.sort(serverList); // Sort Servers
-
-			// find first largest server
-			String highestCore = serverList[numServer - 1].getCore();
-			int highestCoreIndex = numServer - 1;
-
-			for (int i = numServer - 1; i >= 0; i--) {
-				if (serverList[i].getCore() == highestCore) {
-					highestCore = serverList[i].getCore();
-					highestCoreIndex = i;
-				} else {
-					break;
-				}
-			}
-			System.out.println("Largest in list is " + serverList[highestCoreIndex].getType() + " with "
-					+ serverList[highestCoreIndex].getCore() + " cores.");
-
-			sendMSG("OK\n", dout); // catch the "." at end of data stream.
-			rcvd = readMSG(din);
-
-			
-			*/
-			
 			// Schedule jobs to server
 			rcvd = firstjob; // start with first job received.
 
@@ -234,8 +226,8 @@ public class Client {
 
 				switch (job[0]) {
 				case "JOBN": // Schedule job
-					String [] server = getsAvail(job[4], job[5] , job[6], din, dout); // get best fit server
-					sendMSG("SCHD " + job[2] + " " + server[0] + server[1] + "\n", dout);
+					String[] server = getsAvail(job[4], job[5], job[6], din, dout); // get best fit server
+					sendMSG("SCHD " + job[2] + " " + server[0] + " " + server[1] + "\n", dout);
 
 					break;
 				case "JCPL": // If job is being completed send REDY
